@@ -78,10 +78,10 @@ Solver::Solver()
     }
 }
 
-bool Solver::replace_function(string better_puzzle, int replace_size, Board* board, list<int> mylist)
+bool Solver::replace_function(string& better_puzzle, int replace_size, Board& board)
 {
     bool success = false;
-    for (int j = 0; j < original.length() / 5; j++)
+    for (int j = 0; j < original.length() / 20; j++)
     {
         int start_point = rand() % better_puzzle.length();
         string new_puzzle(better_puzzle.length(), '.');
@@ -96,13 +96,13 @@ bool Solver::replace_function(string better_puzzle, int replace_size, Board* boa
                 new_puzzle[(start_point + k) % new_puzzle.length()] = original[(start_point + k) % new_puzzle.length()];
             }
         }
-        Board tmp = Board(new_puzzle, j * 10);
+        Board tmp = Board(new_puzzle);
         random_solution(tmp);
 
-        if (tmp.fitness() < board[mylist.back()].fitness())
+        if (tmp.fitness() < board.fitness())
         {
             success = true;
-            board[mylist.back()] = tmp;
+            board = tmp;
             tmp.release_memory();
             break;
         }
@@ -150,6 +150,7 @@ void Solver::random_solution(Board& board)
             if (grid.empty())
             {
                 failcell++;
+                delete[] fixnum;
                 continue;
             }
             int numChoices = 0;
@@ -179,7 +180,14 @@ bool Solver::Shuffled_Frog_Leaping_Algorithm(int memeplex, int n_frogs, Board* b
     original = board[0].getpuzzle();
     for (int i = 0; i < memeplex * n_frogs; i++) random_solution(board[i]);
     sort(board, board + memeplex * n_frogs, compare);
-    
+    /*** Build triangular probability distribution ***/
+    float* acc = new float[n_frogs];
+    acc[0] = 2.0 / (n_frogs + 1);
+    for (int j = 1; j < n_frogs; j++)
+    {
+        acc[j] = acc[j - 1] + (2.0 * (n_frogs - j) / (n_frogs * (n_frogs + 1)));
+    }
+    /*** Build triangular probability distribution ***/
     bool solve = false;
     while (!solve)
     {
@@ -192,12 +200,6 @@ bool Solver::Shuffled_Frog_Leaping_Algorithm(int memeplex, int n_frogs, Board* b
         int submemeplex = 2;
         for (int i = 0; i < memeplex; i++)
         {
-            float* acc = new float[n_frogs];
-            acc[0] = 2.0 / (n_frogs + 1);
-            for (int j = 1; j < n_frogs; j++)
-            {
-                acc[j] = acc[j - 1] + (2.0 * (n_frogs - j) / (n_frogs * (n_frogs + 1)));
-            }
             list<int> mylist;
             while(mylist.size() != submemeplex)
             {
@@ -213,20 +215,24 @@ bool Solver::Shuffled_Frog_Leaping_Algorithm(int memeplex, int n_frogs, Board* b
                 mylist.sort();
                 mylist.unique();
             }
-            delete[] acc;
             string best_puzzle;
-            if (mylist.front() == i) best_puzzle = board[i + 1].getpuzzle();
+            if (mylist.front() == i) best_puzzle = board[i + memeplex].getpuzzle();
             else best_puzzle = board[i].getpuzzle();
             string better_puzzle = board[mylist.front()].getpuzzle();
-            bool flag = replace_function(better_puzzle, replace, board, mylist);
-            if (!flag) flag = replace_function(best_puzzle, replace, board, mylist);
+            bool flag = replace_function(better_puzzle, replace, board[mylist.back()]);
+            if (!flag) flag = replace_function(best_puzzle, replace, board[mylist.back()]);
             if (!flag)
             {
                 for (int j = 0; j < original.length() / 20; j++)
                 {
-                    Board tmp = Board(original, j * 100);
+                    Board tmp = Board(original);
                     random_solution(tmp);
-                    if (tmp.fitness() == 0) return true;
+                    if (tmp.fitness() == 0) 
+                    {
+                        tmp.release_memory();
+                        delete[] acc;
+                        return true;
+                    }
                     if (tmp.fitness() < board[mylist.back()].fitness())
                     {
                         board[mylist.back()] = tmp;
@@ -243,8 +249,9 @@ bool Solver::Shuffled_Frog_Leaping_Algorithm(int memeplex, int n_frogs, Board* b
         }
         sort(board, board + memeplex * n_frogs, compare);
         end = clock();
-        if ((double)(end - start) / CLOCKS_PER_SEC > 310.0) break;
+        if ((double)(end - start) / CLOCKS_PER_SEC > 450.0) break;
     }
+    delete[] acc;
     return false;
 }
 

@@ -7,13 +7,11 @@ Board::Board()
 
 Board::~Board()
 {
-    /*cout << "delete " << aaa << endl;
-    delete[] numset;*/
+    /*delete[] numset;*/
 }
 
-Board::Board(string puzzle_string, int aa)
+Board::Board(string& puzzle_string)
 {
-    aaa = aa;
     puzzle = puzzle_string;
     numset = new NumSet[puzzle_string.length()];
     size = sqrt(puzzle_string.length());
@@ -43,6 +41,22 @@ Board::Board(string puzzle_string, int aa)
             numset[i].addnum(puzzle_string[i] - '0');
         }
     }
+}
+
+Board& Board::operator=(Board other) 
+{
+    puzzle = other.puzzle;
+    size = other.size;
+    invalid = other.invalid;
+    if (numset == nullptr) 
+    {
+        numset = new NumSet[puzzle.length()];
+    }
+    for (int i = 0; i < puzzle.length(); i++) 
+    {
+        numset[i] = other.numset[i];
+    }
+    return *this;
 }
 
 void Board::PrintPossibaleValue()
@@ -138,7 +152,7 @@ string Board::getpuzzle()
 {
     return puzzle;
 }
-void Board::setpuzzle(string answer)
+void Board::setpuzzle(string& answer)
 {
     puzzle = answer;
 }
@@ -161,5 +175,4 @@ void Board::setfail(int num)
 void Board::release_memory()
 {
     delete[] numset;
-    puzzle = "";
 }

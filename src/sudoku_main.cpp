@@ -87,29 +87,31 @@ int main(int argc, char* argv[])
     string puzzle = readpuzzle(argv[1]);
 	int memeplex = atoi(argv[2]);
 	int n_frogs = atoi(argv[3]);
-	static Board* board = new Board[memeplex * n_frogs]{ Board(puzzle, 0) };
+	// Allocate Board
+	Board* board = new Board[memeplex * n_frogs];
 	Solver solver;
 	bool check = false;
 	bool timeout;
 	string answer;
-	Timer timer;
 	clock_t start;
-	timer.Reset();
+	Timer timer;
 	while (!check)
 	{
 		for (int i = 0; i < memeplex * n_frogs; i++)
 		{
-			board[i] = Board(puzzle, i);
+			Board* temp = new Board(puzzle);
+			board[i] = *temp;
+			temp->release_memory();
+			delete temp;
 		}
-		//board[0].PrintPossibaleValue();
-		//solver.backtrack(0, board[0]);
-		//solver.constrain_propagation(board[0]);
-		//solver.random_solution(board[0]);
+		timer.Reset();
 		timeout = solver.Shuffled_Frog_Leaping_Algorithm(memeplex, n_frogs, board, start);
 		if (!timeout) break;
 		answer = solver.getanswer();
 		check = solution_check(answer);
 	}
+	// Deallocate Board
+	for (int i = 0; i < memeplex * n_frogs; i++) board[i].release_memory();
 	float execute_time = timer.Elapsed();
 	delete[] board;
 
